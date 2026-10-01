@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lab GNS3 — Debian Router + DHCP + Web Server + WordPress</title>
+<style>
+  :root{
+    --bg: #10161d;
+    --panel: #1a222c;
+    --panel-2: #212b37;
+    --line: #2c3947;
+    --text: #dfe6ec;
+    --text-dim: #93a3b3;
+    --cyan: #5fd0c0;
+    --amber: #e2a165;
+    --red: #d9756a;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    --sans: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--bg); color:var(--text); font-family:var(--sans); line-height:1.55;}
+  .wrap{max-width:880px; margin:0 auto; padding:48px 24px 80px;}
+
+  header{margin-bottom:40px;}
+  .eyebrow{color:var(--cyan); font-size:14px; font-weight:600; margin:0 0 8px;}
+  h1{font-size:32px; margin:0 0 10px; letter-spacing:-0.01em; line-height:1.2;}
+  .sub{color:var(--text-dim); font-size:16px; max-width:660px; margin:0;}
+
+  .topo-card{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px 12px 8px; margin:32px 0 40px;}
+  .topo-card svg{display:block; width:100%; height:auto;}
+  .legend{display:flex; gap:22px; justify-content:center; flex-wrap:wrap; font-size:13px; color:var(--text-dim); padding:10px 0 4px;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .swatch{width:18px; height:0; border-top:3px solid; display:inline-block;}
+
+  .section-title{
+    font-size:13px; text-transform:uppercase; letter-spacing:0.04em; color:var(--amber);
+    margin:52px 0 4px; font-weight:600;
+  }
+  .section-desc{color:var(--text-dim); font-size:14.5px; margin:0 0 20px;}
+
+  .flow{position:relative; margin-top:8px;}
+  .flow::before{content:""; position:absolute; left:19px; top:8px; bottom:8px; width:2px; background:var(--line);}
+  .step{position:relative; padding:0 0 28px 56px; margin-bottom:4px;}
+  .step:last-child{padding-bottom:0;}
+  .num{
+    position:absolute; left:0; top:0; width:40px; height:40px; border-radius:50%;
+    background:var(--panel-2); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--mono); font-size:15px; color:var(--cyan); font-weight:600;
+  }
+  .step h3{margin:6px 0 6px; font-size:17px; font-weight:600;}
+  .step p{margin:0 0 10px; color:var(--text-dim); font-size:15px;}
+  code.inline{font-family:var(--mono); background:var(--panel-2); color:var(--amber); padding:1px 6px; border-radius:4px; font-size:13.5px;}
+  pre{
+    background:#0c1116; border:1px solid var(--line); border-radius:8px;
+    padding:14px 16px; overflow-x:auto; margin:0 0 8px;
+    font-family:var(--mono); font-size:13.5px; color:#c8e6dd;
+  }
+  pre .c{color:#5a6b7a;} pre .a{color:var(--amber);} pre .g{color:var(--cyan);}
+
+  .insight{
+    margin:0 0 14px; padding:10px 14px; background:var(--panel-2); border:1px solid var(--line);
+    border-radius:6px; font-size:13.5px; color:var(--text-dim);
+  }
+  .insight div{margin:3px 0;}
+  .insight b{color:var(--cyan);}
+
+  .note{border-left:3px solid var(--cyan); background:rgba(95,208,192,0.07); padding:10px 14px; border-radius:0 6px 6px 0; font-size:14px; color:var(--text-dim); margin:0 0 10px;}
+  .note b{color:var(--cyan);}
+  .warn{border-left:3px solid var(--red); background:rgba(217,117,106,0.08); padding:10px 14px; border-radius:0 6px 6px 0; font-size:14px; color:var(--text-dim); margin:0 0 10px;}
+  .warn b{color:var(--red);}
+
+  .diffbox{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:0 0 10px;}
+  @media (max-width:640px){.diffbox{grid-template-columns:1fr;}}
+  .diffbox h4{font-size:12px; color:var(--text-dim); margin:0 0 6px; font-weight:600;}
+  .diffbox pre{margin:0;}
+
+  .callout{border-left:3px solid var(--amber); background:rgba(226,161,101,0.08); padding:14px 18px; border-radius:0 8px 8px 0; margin:0 0 20px; font-size:15px; color:var(--text-dim);}
+  .callout b{color:var(--amber);}
+  .step-title{font-size:16px; font-weight:600; margin:20px 0 8px; color:var(--text);}
+  .verdict{display:flex; gap:14px; margin:10px 0 16px; flex-wrap:wrap;}
+  .verdict .box{flex:1; min-width:220px; border-radius:8px; padding:10px 14px; font-size:13.5px; border:1px solid var(--line);}
+  .verdict .bad{background:rgba(217,117,106,0.08); border-color:rgba(217,117,106,0.35);}
+  .verdict .maybe{background:rgba(226,161,101,0.08); border-color:rgba(226,161,101,0.35);}
+  .verdict .box b{display:block; margin-bottom:3px;}
+  .verdict .bad b{color:var(--red);}
+  .verdict .maybe b{color:var(--amber);}
+  ul.checklist{list-style:none; margin:0; padding:0;}
+  ul.checklist li{position:relative; padding:6px 0 6px 28px; font-size:14.5px; color:var(--text-dim); border-bottom:1px solid var(--line);}
+  ul.checklist li:last-child{border-bottom:none;}
+  ul.checklist li::before{content:""; position:absolute; left:0; top:11px; width:14px; height:14px; border:1.5px solid var(--cyan); border-radius:3px;}
+  .fixnote{border-left:3px solid var(--red); background:rgba(217,117,106,0.08); padding:12px 16px; border-radius:0 8px 8px 0; margin:0 0 14px; font-size:14px;}
+  .fixnote b{color:var(--red);}
+
+  footer{margin-top:56px; padding-top:20px; border-top:1px solid var(--line); font-size:13px; color:var(--text-dim);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <p class="eyebrow">Panduan Lab Jaringan</p>
+    <h1>Setup GNS3: Debian Router + DHCP Server + Web Server + WordPress</h1>
+    <p class="sub">Alur lengkap: bangun topologi NAT–Debian–Switch–PC Windows, konfigurasi dua interface (DHCP di sisi cloud, static di sisi client), Debian aktif jadi DHCP server untuk LAN, lanjut dipasangi Apache + MariaDB + PHP, sampai WordPress ter-install dan ada konten pertama yang bisa diakses lewat browser PC Windows. Tiap perintah disertai fungsi dan contoh output-nya pada momen dijalankan.</p>
+  </header>
+
+  <div class="topo-card">
+    <svg viewBox="0 0 820 210" xmlns="http://www.w3.org/2000/svg">
+      <line x1="120" y1="105" x2="220" y2="105" stroke="#5fd0c0" stroke-width="2.5" stroke-dasharray="6,5"/>
+      <line x1="420" y1="105" x2="520" y2="105" stroke="#e2a165" stroke-width="2.5"/>
+      <line x1="620" y1="105" x2="700" y2="105" stroke="#e2a165" stroke-width="2.5"/>
+      <g>
+        <ellipse cx="65" cy="105" rx="55" ry="34" fill="#1a222c" stroke="#2c3947"/>
+        <ellipse cx="40" cy="95" rx="26" ry="18" fill="#1a222c" stroke="#2c3947"/>
+        <ellipse cx="95" cy="95" rx="26" ry="18" fill="#1a222c" stroke="#2c3947"/>
+        <text x="65" y="110" text-anchor="middle" fill="#dfe6ec" font-family="ui-monospace,monospace" font-size="12">NAT</text>
+      </g>
+      <rect x="220" y="55" width="200" height="100" rx="8" fill="#1a222c" stroke="#2c3947"/>
+      <text x="320" y="80" text-anchor="middle" fill="#dfe6ec" font-family="ui-monospace,monospace" font-size="13" font-weight="600">DEBIAN</text>
+      <text x="320" y="98" text-anchor="middle" fill="#93a3b3" font-family="ui-monospace,monospace" font-size="11">(router + dhcp server)</text>
+      <rect x="240" y="108" width="150" height="18" rx="3" fill="#212b37"/>
+      <text x="315" y="121" text-anchor="middle" fill="#5fd0c0" font-family="ui-monospace,monospace" font-size="11">ens4 · dhcp client</text>
+      <rect x="240" y="130" width="150" height="18" rx="3" fill="#212b37"/>
+      <text x="315" y="143" text-anchor="middle" fill="#e2a165" font-family="ui-monospace,monospace" font-size="11">ens5 · dhcp server</text>
+      <rect x="520" y="80" width="100" height="50" rx="6" fill="#1a222c" stroke="#2c3947"/>
+      <text x="570" y="110" text-anchor="middle" fill="#dfe6ec" font-family="ui-monospace,monospace" font-size="12">SWITCH</text>
+      <g>
+        <rect x="700" y="65" width="80" height="55" rx="4" fill="#1a222c" stroke="#2c3947"/>
+        <rect x="710" y="73" width="60" height="35" rx="2" fill="#0c1116"/>
+        <rect x="695" y="122" width="90" height="6" rx="2" fill="#2c3947"/>
+        <text x="740" y="150" text-anchor="middle" fill="#dfe6ec" font-family="ui-monospace,monospace" font-size="11">PC Windows</text>
+        <text x="740" y="163" text-anchor="middle" fill="#93a3b3" font-family="ui-monospace,monospace" font-size="10">dapat IP dari Debian</text>
+      </g>
+    </svg>
+    <div class="legend">
+      <span><span class="swatch" style="border-color:#5fd0c0; border-top-style:dashed;"></span> jalur DHCP (dari cloud ke ens4)</span>
+      <span><span class="swatch" style="border-color:#e2a165;"></span> jalur DHCP server (ens5 ke LAN)</span>
+    </div>
+  </div>
+
+  <p class="section-title">Bagian 1 — Topologi &amp; Interface Dasar</p>
+  <p class="section-desc">Membangun topologi di GNS3 dan mengaktifkan dua interface Debian.</p>
+
+  <div class="flow">
+
+    <div class="step">
+      <div class="num">1</div>
+      <h3>Buat topologi di GNS3</h3>
+      <p>Tarik 4 node: <code class="inline">NAT (Cloud)</code>, <code class="inline">Debian (server)</code>, <code class="inline">Switch</code>, <code class="inline">PC Windows</code>.</p>
+    </div>
+
+    <div class="step">
+      <div class="num">2</div>
+      <h3>Rencanakan 2 interface di Debian</h3>
+      <p><code class="inline">ens4</code> menghadap Cloud/NAT (IP otomatis via DHCP), <code class="inline">ens5</code> menghadap Switch/klien (nantinya jadi DHCP server untuk LAN).</p>
+    </div>
+
+    <div class="step">
+      <div class="num">3</div>
+      <h3>Hubungkan NAT (Cloud) ke PC Windows — sementara</h3>
+      <p>Sambungkan dulu Cloud langsung ke PC Windows untuk keperluan setup awal (download Putty). Diputus lagi di langkah 6.</p>
+    </div>
+
+    <div class="step">
+      <div class="num">4</div>
+      <h3>Set PC Windows ke DHCP</h3>
+      <p>Buka <code class="inline">Network Adapter Settings</code> → <code class="inline">Obtain an IP address automatically</code>.</p>
+    </div>
+
+    <div class="step">
+      <div class="num">5</div>
+      <h3>Download &amp; install Putty</h3>
+      <p>Selesaikan instalasi Putty di PC Windows — dipakai nanti untuk SSH ke Debian. IP static <code class="inline">192.168.1.10</code> boleh diisi sementara di sini.</p>
+    </div>
+
+    <div class="step">
+      <div class="num">6</div>
+      <h3>Ubah ulang pengkabelan di GNS3</h3>
+      <p>Putuskan kabel Cloud–Windows. Sambungkan sesuai topologi final:</p>
+      <pre>Cloud (NAT) <span class="a">──</span> Debian(ens4) ... Debian(ens5) <span class="a">──</span> Switch <span class="a">──</span> PC Windows</pre>
+    </div>
+
+    <div class="step">
+      <div class="num">7</div>
+      <h3>Login ke Debian</h3>
+      <p>Masukkan username dan password Debian di console GNS3.</p>
+    </div>
+
+    <div class="step">
+      <div class="num">8</div>
+      <h3>Masuk mode super user</h3>
+      <pre>sudo su</pre>
+      <div class="insight">
+        <div><b>Fungsi:</b> pindah dari user biasa ke shell root, supaya bisa edit file konfigurasi sistem dan restart service tanpa dibatasi permission.</div>
+        <div><b>Output:</b> prompt terminal berubah dari <code class="inline">$</code> jadi <code class="inline">#</code> — itu tandanya sudah jadi root.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">9</div>
+      <h3>Cek interface yang terdeteksi</h3>
+      <pre>ip a</pre>
+      <div class="insight">
+        <div><b>Fungsi:</b> menampilkan semua interface network yang dikenali sistem beserta status dan IP address-nya.</div>
+        <div><b>Output:</b> tiap interface muncul sebagai blok bernomor, contoh <code class="inline">2: ens4: &lt;UP,LOWER_UP&gt; ... inet 10.0.3.15/24</code>. Kalau baris <code class="inline">inet</code> (IPv4) belum ada dan cuma ada <code class="inline">inet6</code> (fe80::...), berarti interface itu belum dapat IP.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">10</div>
+      <h3>Buka file konfigurasi interface</h3>
+      <pre>nano /etc/network/interfaces</pre>
+      <div class="insight">
+        <div><b>Fungsi:</b> membuka file konfigurasi network utama Debian di editor nano, tempat interface didaftarkan dan diberi mode (dhcp/static).</div>
+        <div><b>Output:</b> bukan output teks — yang muncul adalah tampilan editor nano menampilkan isi file tersebut, siap diedit.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">11</div>
+      <h3>Aktifkan konfigurasi ens4 &amp; ens5</h3>
+      <p>Maksud "hapus 6 tanda pager" di catatan aslinya: pada template bawaan, baris <code class="inline">auto</code>/<code class="inline">iface</code> untuk kedua interface biasanya dikomentari dengan tanda <code class="inline">#</code> (pagar) — 3 baris untuk ens4, 3 untuk ens5, total 6. Hapus semua tanda <code class="inline">#</code> itu supaya baris-baris aktif.</p>
+      <div class="diffbox">
+        <div>
+          <h4>Sebelum (contoh template)</h4>
+          <pre><span class="c"># auto ens4
+# iface ens4 inet dhcp
+#
+# auto ens5
+# iface ens5 inet static
+#     address 192.168.1.1</span></pre>
+        </div>
+        <div>
+          <h4>Sesudah (aktif)</h4>
+          <pre>auto lo
+iface lo inet loopback
+
+<span class="a">auto ens4
+iface ens4 inet dhcp</span>
+
+<span class="a">auto ens5
+iface ens5 inet static
+    address 192.168.1.1
+    netmask 255.255.255.0</span></pre>
+        </div>
+      </div>
+      <div class="insight">
+        <div><b>Fungsi <code class="inline">auto ens4</code>:</b> menandai interface diaktifkan otomatis saat boot / saat <code class="inline">networking</code> di-restart.</div>
+        <div><b>Fungsi <code class="inline">iface ens4 inet dhcp</code>:</b> minta IP otomatis dari DHCP server di jalur cloud/NAT.</div>
+        <div><b>Fungsi <code class="inline">iface ens5 inet static</code> + <code class="inline">address</code>/<code class="inline">netmask</code>:</b> pasang IP tetap 192.168.1.1/24 di ens5 — ini nanti jadi gateway sekaligus alamat DHCP server untuk LAN.</div>
+      </div>
+      <div class="warn"><b>Sesuaikan:</b> IP <code class="inline">192.168.1.1</code> cuma contoh gateway untuk LAN 192.168.1.0/24. Ganti kalau skema IP kamu beda. Simpan <code class="inline">Ctrl+O</code> → Enter, keluar <code class="inline">Ctrl+X</code>.</div>
+    </div>
+
+    <div class="step">
+      <div class="num">12</div>
+      <h3>Restart service networking</h3>
+      <pre>systemctl restart networking
+systemctl status networking -l</pre>
+      <div class="insight">
+        <div><b>Fungsi restart:</b> menerapkan ulang isi <code class="inline">/etc/network/interfaces</code> yang baru diedit ke seluruh interface.</div>
+        <div><b>Fungsi status:</b> mengecek apakah service <code class="inline">networking</code> berhasil jalan atau gagal.</div>
+        <div><b>Output sukses:</b> <code class="inline">Active: active (exited)</code>. <b>Output gagal:</b> <code class="inline">Active: failed</code> disertai baris error — biasanya karena typo syntax di file interfaces.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">12b</div>
+      <h3>Set hostname &amp; edit /etc/hosts</h3>
+      <p>Cek dulu hostname Debian saat ini (defaultnya biasanya <code class="inline">debian</code>):</p>
+      <pre>hostname</pre>
+      <p>Kalau mau diganti jadi nama yang lebih jelas, edit filenya (isi cukup satu kata, tanpa spasi, misal <code class="inline">debian-server</code>):</p>
+      <pre>sudo nano /etc/hostname</pre>
+      <p>Lalu edit <code class="inline">/etc/hosts</code>:</p>
+      <pre>sudo nano /etc/hosts</pre>
+      <p>Format tiap baris: <code class="inline">IP&nbsp;&nbsp;&nbsp;nama-domain&nbsp;&nbsp;&nbsp;nama-host</code> (dipisah spasi/tab, <b>tanpa</b> prefix <code class="inline">/24</code> — <code class="inline">/etc/hosts</code> memang tidak pernah pakai notasi CIDR sama sekali).</p>
+      <div class="diffbox">
+        <div>
+          <h4>Isi default</h4>
+          <pre>127.0.0.1       localhost
+127.0.1.1       debian</pre>
+        </div>
+        <div>
+          <h4>Ditambah (2 baris baru)</h4>
+          <pre>127.0.0.1       localhost
+127.0.1.1       <span class="g">skadika.net</span>       <span class="g">debian-server</span>
+<span class="g">192.168.1.1</span>     <span class="g">www.skadika.net skadika.net</span></pre>
+        </div>
+      </div>
+      <div class="insight">
+        <div><b>Fungsi baris <code class="inline">127.0.1.1 ...</code>:</b> ini konvensi baku Debian (bukan <code class="inline">127.0.0.1</code> biasa) — dipasangkan ke domain &amp; hostname supaya perintah seperti <code class="inline">sudo</code> atau <code class="inline">hostname -f</code> bisa resolve nama server ini sendiri tanpa perlu nanya DNS/BIND9. Baris ini cuma dipakai internal server, tidak ada hubungannya dengan client lain di LAN.</div>
+        <div><b>Fungsi baris <code class="inline">192.168.1.1 www.skadika.net skadika.net</code>:</b> ini tambahan di luar pola bawaan buku — supaya Debian server <i>itu sendiri</i> juga bisa resolve <code class="inline">www.skadika.net</code> ke IP LAN-nya lewat <code class="inline">/etc/hosts</code> duluan, sebelum sempat nanya BIND9. Berguna kalau mau tes <code class="inline">curl www.skadika.net</code> langsung dari console Debian di Bagian 4 tanpa bergantung ke DNS server yang sama-sama jalan di mesin ini.</div>
+        <div><b>Kenapa dua-duanya boleh beda IP:</b> baris pertama (<code class="inline">127.0.1.1</code>) untuk resolusi hostname internal, baris kedua (<code class="inline">192.168.1.1</code>) untuk resolusi domain LAN — beda tujuan, tidak konflik walau sama-sama merujuk domain <code class="inline">skadika.net</code>.</div>
+        <div><b>Output:</b> tidak ada output CLI; berlaku begitu file disimpan, tidak perlu restart service apa pun.</div>
+      </div>
+      <div class="warn">Baris <code class="inline">192.168.1.1 www.skadika.net skadika.net</code> di sini <b>hanya berlaku untuk Debian server itu sendiri</b> — PC Windows dan client lain di LAN tetap wajib resolve lewat BIND9 (Bagian 3), karena mereka tidak baca <code class="inline">/etc/hosts</code> punya Debian.</div>
+    </div>
+
+    <div class="step">
+      <div class="num">13</div>
+      <h3>Update repo Debian</h3>
+      <pre>sudo apt update</pre>
+      <div class="insight">
+        <div><b>Fungsi:</b> mengecek ulang daftar paket terbaru dari repository Debian (belum menginstall apa pun, cuma refresh index lokal).</div>
+        <div><b>Output sukses:</b> deretan baris <code class="inline">Get:1 http://deb.debian.org/debian bookworm InRelease ...</code> diakhiri <code class="inline">Reading package lists... Done</code>.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">14</div>
+      <h3>Kalau ada error saat update</h3>
+      <p>Lihat <a href="#troubleshooting" style="color:var(--cyan);">Bagian 9 — Troubleshooting apt update</a> di bawah — biasanya penyebabnya ens4 belum dapat IP dari DHCP (routing, bukan DNS).</p>
+    </div>
+
+  </div>
+
+  <p class="section-title">Bagian 2 — Jadikan Debian sebagai DHCP Server (ens5)</p>
+  <p class="section-desc">Lanjutan dari Bagian 1: sekarang ens5 tidak cuma dikasih IP static, tapi Debian juga membagikan IP otomatis ke semua client di LAN (Switch → PC Windows) lewat <code class="inline">isc-dhcp-server</code>.</p>
+
+  <div class="flow">
+
+    <div class="step">
+      <div class="num">15</div>
+      <h3>Install paket DHCP server</h3>
+      <pre>sudo apt install isc-dhcp-server</pre>
+      <div class="insight">
+        <div><b>Fungsi:</b> menginstall service <code class="inline">isc-dhcp-server</code> — daemon yang akan menjawab request DHCP dari client dan membagikan IP.</div>
+        <div><b>Output:</b> proses download &amp; install paket. Di akhir mungkin ada warning <code class="inline">isc-dhcp-server.service failed</code> — wajar di titik ini karena <code class="inline">dhcpd.conf</code> belum diisi dan interface belum ditentukan (diperbaiki di langkah 16–17).</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">16</div>
+      <h3>Tentukan interface yang dilayani</h3>
+      <pre>nano /etc/default/isc-dhcp-server</pre>
+      <pre>INTERFACESv4="<span class="a">ens5</span>"</pre>
+      <div class="insight">
+        <div><b>Fungsi:</b> memberi tahu service, interface mana yang harus "didengarkan" untuk request DHCP broadcast dari client — kalau kosong atau salah nama interface, service gagal start (persis error <code class="inline">systemctl restart isc-dhcp-server</code> yang muncul di awal).</div>
+        <div><b>Output:</b> tidak ada output langsung; verifikasi dengan <code class="inline">cat /etc/default/isc-dhcp-server</code> setelah disimpan.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">17</div>
+      <h3>Isi konfigurasi subnet di dhcpd.conf</h3>
+      <pre>nano /etc/dhcp/dhcpd.conf</pre>
+      <pre>subnet <span class="g">192.168.1.0</span> netmask <span class="g">255.255.255.0</span> {
+    range <span class="g">192.168.1.100</span> <span class="g">192.168.1.200</span>;
+    option routers <span class="g">192.168.1.1</span>;
+    option domain-name-servers <span class="g">8.8.8.8</span>, <span class="g">8.8.4.4</span>;
+}</pre>
+      <div class="insight">
+        <div><b><code class="inline">subnet ... netmask ...</code>:</b> jaringan yang dilayani DHCP server ini — wajib cocok dengan network address IP static ens5 (192.168.1.0/24).</div>
+        <div><b><code class="inline">range</code>:</b> rentang IP yang boleh dibagikan otomatis ke client. Sengaja mulai dari .100 supaya tidak tabrakan dengan IP static (misalnya ens5 sendiri di .1).</div>
+        <div><b><code class="inline">option routers</code>:</b> IP gateway yang diberitahukan ke client — di sini alamat ens5 Debian sendiri.</div>
+        <div><b><code class="inline">option domain-name-servers</code>:</b> DNS server yang dipakai client untuk resolve nama domain.</div>
+        <div><b>Output:</b> tidak ada output CLI — hasilnya baru kelihatan saat restart service di langkah 18.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">18</div>
+      <h3>Restart &amp; cek service DHCP</h3>
+      <pre>systemctl restart isc-dhcp-server
+systemctl status isc-dhcp-server -l</pre>
+      <div class="insight">
+        <div><b>Fungsi:</b> menerapkan config baru dari langkah 16–17, lalu mengecek apakah service benar-benar jalan.</div>
+        <div><b>Output sukses:</b> <code class="inline">Active: active (running)</code> disertai log <code class="inline">Listening on LPF/ens5/...</code>.</div>
+        <div><b>Output gagal</b> (ini skenario di awal chat): <code class="inline">Job for isc-dhcp-server.service failed...</code>.</div>
+      </div>
+
+      <div class="warn"><b>Kalau gagal, jangan asal restart ulang</b> — cek dulu baris mana di <code class="inline">dhcpd.conf</code> yang error:</div>
+      <pre>dhcpd -t -cf /etc/dhcp/dhcpd.conf</pre>
+      <div class="insight">
+        <div><b>Fungsi:</b> menjalankan <code class="inline">dhcpd</code> dalam mode <b>test</b> (<code class="inline">-t</code>) terhadap file config tertentu (<code class="inline">-cf</code>) — <u>tidak</u> benar-benar menyalakan service, cuma mengecek syntax-nya valid atau tidak.</div>
+        <div><b>Output kalau ada syntax error</b> (contoh — lupa titik-koma):</div>
+      </div>
+      <pre><span class="c">Internet Systems Consortium DHCP Server 4.4.1
+Copyright 2004-2018 Internet Systems Consortium.
+All rights reserved.
+For info, please visit https://www.isc.org/software/dhcp/</span>
+
+<span class="a">/etc/dhcp/dhcpd.conf line 15: semicolon expected.</span>
+}
+<span class="a">^</span>
+<span class="a">Configuration file errors encountered -- exiting</span></pre>
+      <div class="insight">
+        <div><b>Maksud output di atas:</b></div>
+        <div>• <code class="inline">line 15</code> → baris ke-15 di <code class="inline">dhcpd.conf</code> yang bermasalah, langsung buka <code class="inline">nano /etc/dhcp/dhcpd.conf</code> lalu lompat ke baris itu (di nano bisa pakai <code class="inline">Ctrl+_</code> lalu ketik nomor barisnya).</div>
+        <div>• <code class="inline">semicolon expected</code> → jenis errornya: dhcpd nunggu tanda titik-koma <code class="inline">;</code> di akhir baris tapi tidak ketemu. Error umum lain: <code class="inline">Expecting numeric value</code> (salah format IP/angka), atau <code class="inline">unexpected end of file</code> (ada kurung <code class="inline">{ }</code> yang tidak menutup).</div>
+        <div>• Simbol <code class="inline">^</code> di bawah baris <code class="inline">}</code> → penanda posisi kira-kira di mana parser berhenti, biasanya pas di baris <i>setelah</i> baris yang sebenarnya kurang titik-koma.</div>
+        <div>• <code class="inline">Configuration file errors encountered -- exiting</code> → kesimpulan: config tidak valid, dan ini sebabnya <code class="inline">systemctl restart isc-dhcp-server</code> di langkah sebelumnya gagal.</div>
+        <div><b>Output kalau syntax OK:</b> cuma banner versi (4 baris pertama di atas) tanpa baris <code class="inline">line ... error</code> apa pun, lalu keluar normal — tandanya config sudah siap dipakai, lanjut <code class="inline">systemctl restart isc-dhcp-server</code> lagi.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">19</div>
+      <h3>Balik PC Windows ke mode DHCP</h3>
+      <p>Buka lagi Network Adapter Settings di PC Windows, ubah dari static <code class="inline">192.168.1.10</code> kembali ke <code class="inline">Obtain an IP address automatically</code>.</p>
+      <pre>ipconfig /release
+ipconfig /renew</pre>
+      <div class="insight">
+        <div><b>Fungsi <code class="inline">/release</code>:</b> melepas IP yang sedang dipakai adapter.</div>
+        <div><b>Fungsi <code class="inline">/renew</code>:</b> minta ulang IP baru ke DHCP server yang aktif di jaringan — sekarang harusnya dijawab oleh Debian, bukan manual lagi.</div>
+        <div><b>Output:</b> PC Windows dapat IP baru di rentang <code class="inline">192.168.1.100–200</code>, dengan default gateway <code class="inline">192.168.1.1</code>.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">20</div>
+      <h3>Pantau proses DHCP dari sisi Debian</h3>
+      <pre>journalctl -u isc-dhcp-server -f</pre>
+      <div class="insight">
+        <div><b>Fungsi:</b> memonitor log service DHCP secara real-time, supaya kelihatan proses request-response saat PC Windows minta IP.</div>
+        <div><b>Output berhasil:</b></div>
+      </div>
+      <pre><span class="g">DHCPDISCOVER</span> from &lt;mac-address&gt; via ens5
+<span class="g">DHCPOFFER</span> on 192.168.1.100 to &lt;mac-address&gt; via ens5
+<span class="g">DHCPACK</span> on 192.168.1.100 to &lt;mac-address&gt; via ens5</pre>
+      <p>Kalau urutan DISCOVER → OFFER → ACK ini muncul, DHCP server sudah jalan dengan benar. Tekan <code class="inline">Ctrl+C</code> untuk keluar dari mode monitor.</p>
+    </div>
+
+  </div>
+
+  <p class="section-title">Bagian 3 — Pasang DNS Server (BIND9)</p>
+  <p class="section-desc">Sebelum masuk ke web server, Debian yang sama dijadikan DNS server lokal dulu lewat <code class="inline">bind9</code>. Tujuannya: nanti situs WordPress bisa diakses pakai nama domain (misalnya <code class="inline">www.skadika.net</code>), bukan cuma ketik IP <code class="inline">192.168.1.1</code> mentah-mentah dari browser.</p>
+
+  <div class="flow">
+
+    <div class="step">
+      <div class="num">21</div>
+      <h3>Install BIND9</h3>
+      <pre>sudo apt install bind9 bind9utils bind9-doc -y</pre>
+      <div class="insight">
+        <div><b>Fungsi <code class="inline">bind9</code>:</b> software DNS server-nya sendiri — nanti menjawab pertanyaan "IP dari domain X berapa?" dari client di LAN.</div>
+        <div><b>Fungsi <code class="inline">bind9utils</code>:</b> kumpulan tool bantu buat cek config (<code class="inline">named-checkconf</code>, <code class="inline">named-checkzone</code>) sebelum service direstart — dipakai di langkah 26.</div>
+        <div><b>Fungsi <code class="inline">bind9-doc</code>:</b> dokumentasi offline, opsional tapi ringan jadi disertakan.</div>
+        <div><b>Output:</b> proses install paket, service <code class="inline">named</code>/<code class="inline">bind9</code> otomatis aktif di akhir instalasi (BIND9 memang jalan dengan nama proses <code class="inline">named</code>).</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">22</div>
+      <h3>Cek service aktif</h3>
+      <pre>systemctl status bind9 -l</pre>
+      <div class="insight">
+        <div><b>Fungsi:</b> memastikan BIND9 sudah jalan sebelum lanjut konfigurasi zona.</div>
+        <div><b>Output sukses:</b> <code class="inline">Active: active (running)</code> disertai log <code class="inline">Listening on ... port 53</code> — port 53 memang port standar protokol DNS.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">23</div>
+      <h3>Aktifkan forwarders (buat domain publik tetap jalan)</h3>
+      <pre>sudo nano /etc/bind/named.conf.options</pre>
+      <div class="insight">
+        <div><b>Fungsi:</b> BIND9 nanti cuma tahu domain lokal (<code class="inline">skadika.net</code>) yang didaftarkan sendiri di langkah 24. Supaya domain publik lain (kalau lab-nya kebetulan tersambung internet) tetap bisa di-resolve, BIND9 perlu "meneruskan" pertanyaan itu ke DNS publik.</div>
+      </div>
+      <div class="diffbox">
+        <div>
+          <h4>Sebelum (default, dikomentari)</h4>
+          <pre><span class="c">// forwarders {
+        //   0.0.0.0;
+        // };</span>
+
+<span class="c">        dnssec-validation auto;</span></pre>
+        </div>
+        <div>
+          <h4>Sesudah (diaktifkan)</h4>
+          <pre><span class="g">        forwarders {
+            8.8.8.8;
+            8.8.4.4;
+        };</span>
+
+<span class="g">        dnssec-validation auto;</span></pre>
+        </div>
+      </div>
+      <div class="insight">
+        <div><b>Output:</b> tidak ada output CLI — baru diverifikasi lewat <code class="inline">named-checkconf</code> di langkah 26.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">24</div>
+      <h3>Daftarkan zona domain lokal (forward &amp; reverse)</h3>
+      <pre>sudo nano /etc/bind/named.conf.local</pre>
+      <p>Tambahkan <b>dua</b> blok berikut di baris paling bawah — satu untuk forward zone (nama → IP), satu untuk reverse zone (IP → nama):</p>
+      <pre>zone "<span class="g">skadika.net</span>" {
+    type master;
+    file "/etc/bind/db.skadika.net";
+};
+
+zone "<span class="g">1.168.192.in-addr.arpa</span>" {
+    type master;
+    file "/etc/bind/db.192";
+};</pre>
+      <div class="insight">
+        <div><b>Fungsi <code class="inline">zone "skadika.net"</code>:</b> mendaftarkan domain <code class="inline">skadika.net</code> sebagai domain yang "dimiliki" &amp; dijawab langsung oleh server ini (bukan diteruskan ke DNS lain) — ini forward zone.</div>
+        <div><b>Fungsi <code class="inline">zone "1.168.192.in-addr.arpa"</code>:</b> ini reverse zone, kebalikan dari forward — dipakai untuk pertanyaan "IP 192.168.1.x itu nama domainnya apa?". Nama zonanya oktet IP network yang dibalik urutan (<code class="inline">192.168.1</code> → <code class="inline">1.168.192</code>) ditambah akhiran baku <code class="inline">.in-addr.arpa</code>.</div>
+        <div><b>Fungsi <code class="inline">type master</code>:</b> server ini adalah sumber data utama (bukan sekadar cache/salinan) untuk kedua zona ini.</div>
+        <div><b>Fungsi <code class="inline">file</code>:</b> menunjuk ke file zona yang isinya daftar record — forward zone (<code class="inline">db.skadika.net</code>) dibuat di langkah 25, reverse zone (<code class="inline">db.192</code>) dibuat di langkah 25b.</div>
+        <div><b>Output:</b> tidak ada output CLI; kedua file ini baru dipakai saat BIND9 direstart.</div>
+      </div>
+      <div class="note"><b>Kenapa dua-duanya sekaligus?</b> Supaya satu kali edit <code class="inline">named.conf.local</code>, lalu baru bikin isi filenya belakangan (langkah 25 &amp; 25b) — daripada bolak-balik buka file yang sama dua kali.</div>
+    </div>
+
+    <div class="step">
+      <div class="num">25</div>
+      <h3>Buat file zona &amp; isi record</h3>
+      <pre>sudo cp /etc/bind/db.local /etc/bind/db.skadika.net
+sudo nano /etc/bind/db.skadika.net</pre>
+      <div class="insight">
+        <div><b>Fungsi <code class="inline">cp db.local ...</code>:</b> BIND9 sudah menyediakan template zona dasar (<code class="inline">db.local</code>) — lebih aman disalin dulu daripada nulis dari nol, tinggal disesuaikan.</div>
+      </div>
+      <div class="diffbox">
+        <div>
+          <h4>Sebelum (template db.local)</h4>
+          <pre>$TTL    604800
+@       IN      SOA     <span class="c">localhost.</span> root.<span class="c">localhost.</span> (
+                              2         ; Serial
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+;
+@       IN      NS      <span class="c">localhost.</span>
+@       IN      A       <span class="c">127.0.0.1</span>
+@       IN      AAAA    ::1</pre>
+        </div>
+        <div>
+          <h4>Sesudah (disesuaikan)</h4>
+          <pre>$TTL    604800
+@       IN      SOA     <span class="g">ns.skadika.net.</span> admin.<span class="g">skadika.net.</span> (
+                              <span class="g">3</span>         ; Serial (naikkan tiap edit)
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+;
+@       IN      NS      <span class="g">ns.skadika.net.</span>
+ns      IN      A       <span class="g">192.168.1.1</span>
+www     IN      A       <span class="g">192.168.1.1</span>
+@       IN      A       <span class="g">192.168.1.1</span></pre>
+        </div>
+      </div>
+      <div class="insight">
+        <div><b>Fungsi <code class="inline">SOA</code> (Start of Authority):</b> catatan administratif zona — siapa nameserver utamanya, email admin (titik menggantikan @), dan nomor <code class="inline">Serial</code> yang wajib dinaikkan tiap kali file ini diedit supaya perubahan dianggap "versi baru".</div>
+        <div><b>Fungsi baris <code class="inline">NS</code>:</b> menunjuk nameserver resmi untuk domain ini.</div>
+        <div><b>Fungsi baris <code class="inline">A</code>:</b> pemetaan nama host → IP. Baris <code class="inline">www IN A 192.168.1.1</code> inilah yang bikin <code class="inline">www.skadika.net</code> nanti mengarah ke web server di Bagian 4. Baris <code class="inline">@ IN A</code> membuat domain tanpa <code class="inline">www</code> (<code class="inline">skadika.net</code> polos) juga mengarah ke IP yang sama.</div>
+      </div>
+      <div class="warn"><b>Jangan lupa titik (<code class="inline">.</code>) di akhir nama domain</b> pada baris <code class="inline">SOA</code> dan <code class="inline">NS</code> (misal <code class="inline">ns.skadika.net.</code>) — di syntax zona BIND, titik di akhir berarti "nama lengkap/absolut". Lupa titik ini adalah typo tersering.</div>
+    </div>
+
+    <div class="step">
+      <div class="num">25b</div>
+      <h3>Buat file zona reverse (PTR) &amp; isi record</h3>
+      <pre>sudo cp /etc/bind/db.127 /etc/bind/db.192
+sudo nano /etc/bind/db.192</pre>
+      <div class="insight">
+        <div><b>Fungsi <code class="inline">cp db.127 ...</code>:</b> sama seperti langkah 25 tadi (copy template daripada nulis dari nol) — bedanya kali ini templatenya <code class="inline">db.127</code>, template reverse bawaan BIND9 untuk loopback (<code class="inline">127.in-addr.arpa</code>), lebih cocok dijadikan dasar reverse zone daripada <code class="inline">db.local</code> yang formatnya forward.</div>
+      </div>
+      <div class="diffbox">
+        <div>
+          <h4>Sebelum (template db.127)</h4>
+          <pre>$TTL    604800
+@       IN      SOA     <span class="c">localhost.</span> root.<span class="c">localhost.</span> (
+                              1         ; Serial
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+;
+@       IN      NS      <span class="c">localhost.</span>
+1.0.0   IN      PTR     <span class="c">localhost.</span></pre>
+        </div>
+        <div>
+          <h4>Sesudah (disesuaikan)</h4>
+          <pre>$TTL    604800
+@       IN      SOA     <span class="g">ns.skadika.net.</span> admin.<span class="g">skadika.net.</span> (
+                              <span class="g">2</span>         ; Serial (naikkan tiap edit)
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache TTL
+;
+@       IN      NS      <span class="g">ns.skadika.net.</span>
+1       IN      PTR     <span class="g">ns.skadika.net.</span></pre>
+        </div>
+      </div>
+      <div class="insight">
+        <div><b>Fungsi baris <code class="inline">PTR</code>:</b> kebalikan dari record <code class="inline">A</code> di forward zone — memetakan IP → nama domain. Baris <code class="inline">1 IN PTR ns.skadika.net.</code> artinya "IP dengan oktet terakhir <code class="inline">1</code> di jaringan <code class="inline">192.168.1.0/24</code> (jadi <code class="inline">192.168.1.1</code>) adalah <code class="inline">ns.skadika.net</code>" — oktet terakhir saja yang ditulis di sini karena tiga oktet pertama (<code class="inline">1.168.192</code>) sudah dinyatakan lewat nama zona di <code class="inline">named.conf.local</code> (langkah 24).</div>
+        <div><b>Kenapa nomor Serial mulai dari 2, bukan 1 lagi:</b> supaya konsisten dengan forward zone di langkah 25 yang juga sudah dinaikkan dari template awalnya — bukan aturan wajib, boleh mulai dari angka berapa saja asal konsisten dinaikkan tiap edit berikutnya.</div>
+      </div>
+      <div class="warn"><b>Jangan tertukar dengan forward zone:</b> file ini isinya cuma daftar <code class="inline">PTR</code> (IP → nama), bukan <code class="inline">A</code> (nama → IP). Kalau cuma ada satu host di LAN yang perlu di-reverse (yaitu <code class="inline">ens5</code> sendiri di <code class="inline">192.168.1.1</code>), satu baris <code class="inline">PTR</code> ini sudah cukup — tidak perlu baris PTR terpisah untuk <code class="inline">www</code>, karena <code class="inline">www</code> memang mengarah ke IP yang sama.</div>
+    </div>
+
+    <div class="step">
+      <div class="num">26</div>
+      <h3>Cek syntax config &amp; zona sebelum restart</h3>
+      <pre>named-checkconf
+named-checkzone skadika.net /etc/bind/db.skadika.net
+named-checkzone 1.168.192.in-addr.arpa /etc/bind/db.192</pre>
+      <div class="insight">
+        <div><b>Fungsi <code class="inline">named-checkconf</code>:</b> mengecek syntax <code class="inline">named.conf.options</code> &amp; <code class="inline">named.conf.local</code> — mirip peran <code class="inline">dhcpd -t</code> di Bagian 2 (langkah 18).</div>
+        <div><b>Fungsi <code class="inline">named-checkzone</code>:</b> khusus mengecek isi file zona — baris pertama cek forward zone (langkah 25), baris kedua cek reverse zone (langkah 25b). Nama zona yang diketik harus persis sama dengan yang didaftarkan di <code class="inline">named.conf.local</code> (langkah 24), bukan nama filenya.</div>
+        <div><b>Output kalau OK:</b> <code class="inline">named-checkconf</code> diam saja tanpa output (tanda sukses). Tiap <code class="inline">named-checkzone</code> menampilkan <code class="inline">loaded serial ...</code> lalu baris <code class="inline">OK</code> — jadi kalau dua zona, harus muncul dua baris <code class="inline">OK</code>.</div>
+        <div><b>Output kalau ada error:</b> muncul pesan spesifik disertai nomor baris, contoh <code class="inline">dns_master_load: /etc/bind/db.skadika.net:9: unknown RR type</code> — tandanya ada typo di tipe record (SOA/NS/A/PTR) atau titik-koma yang salah tempat.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">27</div>
+      <h3>Restart &amp; tes BIND9 dari Debian sendiri</h3>
+      <pre>sudo systemctl restart bind9
+systemctl status bind9 -l</pre>
+      <div class="warn"><b>Kalau muncul <code class="inline">command not found</code> saat pakai <code class="inline">dig</code>:</b> di Debian versi baru, <code class="inline">dig</code> bukan bagian dari paket <code class="inline">bind9</code> lagi — harus diinstall terpisah sebagai paket client:
+      <pre>sudo apt install dnsutils -y</pre>
+      Kalau nama paket itu juga tidak ketemu (di Debian 11 ke atas namanya berubah), coba:
+      <pre>sudo apt install bind9-dnsutils -y</pre>
+      </div>
+      <pre>dig @localhost www.skadika.net</pre>
+      <div class="insight">
+        <div><b>Fungsi <code class="inline">dig</code>:</b> tool query DNS — <code class="inline">@localhost</code> artinya "tanya ke server DNS di mesin ini sendiri", diikuti nama domain yang mau dicek. Ini tes forward (nama → IP).</div>
+        <div><b>Kenapa paket ini terpisah dari <code class="inline">bind9</code>:</b> <code class="inline">bind9</code> cuma berisi komponen <b>server</b> (<code class="inline">named</code>), sedangkan <code class="inline">dig</code>/<code class="inline">nslookup</code> adalah tool <b>client</b> buat nge-test — dua fungsi beda paket, meskipun sama-sama "punya" tim BIND.</div>
+        <div><b>Output sukses,</b> di bagian <code class="inline">ANSWER SECTION</code>:</div>
+      </div>
+      <pre>;; ANSWER SECTION:
+www.skadika.net.          604800  IN      A       <span class="g">192.168.1.1</span></pre>
+      <p>Kalau baris ini muncul, BIND9 sudah benar menjawab domain lokal dengan IP yang tepat.</p>
+      <pre>dig -x <span class="g">192.168.1.1</span> @localhost</pre>
+      <div class="insight">
+        <div><b>Fungsi <code class="inline">-x</code>:</b> mode reverse lookup — tanya "IP ini domainnya apa?" (kebalikan dari tes sebelumnya). <code class="inline">dig</code> otomatis membalik oktet IP jadi format <code class="inline">in-addr.arpa</code> di belakang layar, tidak perlu diketik manual.</div>
+        <div><b>Output sukses,</b> di bagian <code class="inline">ANSWER SECTION</code>:</div>
+      </div>
+      <pre>;; ANSWER SECTION:
+1.1.168.192.in-addr.arpa. 604800 IN PTR <span class="g">ns.skadika.net.</span></pre>
+      <p>Kalau baris ini muncul, reverse zone (langkah 24 &amp; 25b) sudah benar — forward dan reverse dua-duanya sekarang jalan.</p>
+    </div>
+
+    <div class="step">
+      <div class="num">28</div>
+      <h3>Arahkan DHCP supaya client pakai DNS lokal ini</h3>
+      <pre>sudo nano /etc/dhcp/dhcpd.conf</pre>
+      <p>Ubah baris <code class="inline">option domain-name-servers</code> yang sudah dibuat di Bagian 2 (langkah 17), dan tambahkan <code class="inline">option domain-name</code>:</p>
+      <div class="diffbox">
+        <div>
+          <h4>Sebelum (Bagian 2, langkah 17)</h4>
+          <pre>subnet 192.168.1.0 netmask 255.255.255.0 {
+    range 192.168.1.100 192.168.1.200;
+    option routers 192.168.1.1;
+    <span class="c">option domain-name-servers 8.8.8.8, 8.8.4.4;</span>
+}</pre>
+        </div>
+        <div>
+          <h4>Sesudah (pakai DNS lokal)</h4>
+          <pre>subnet 192.168.1.0 netmask 255.255.255.0 {
+    range 192.168.1.100 192.168.1.200;
+    option routers 192.168.1.1;
+    <span class="g">option domain-name-servers 192.168.1.1;
+    option domain-name "skadika.net";</span>
+}</pre>
+        </div>
+      </div>
+      <div class="insight">
+        <div><b>Fungsi:</b> tanpa perubahan ini, PC Windows tetap pakai <code class="inline">8.8.8.8</code> sebagai DNS-nya — jadi tidak akan pernah tahu <code class="inline">www.skadika.net</code> itu domain apa (karena domain itu cuma dikenal BIND9 lokal, bukan Google). Dengan diarahkan ke <code class="inline">192.168.1.1</code>, semua pertanyaan domain dari client lewat BIND9 dulu — domain lokal dijawab langsung, domain publik diteruskan lewat <code class="inline">forwarders</code> (langkah 23).</div>
+      </div>
+      <pre>sudo systemctl restart isc-dhcp-server</pre>
+      <p>Terapkan perubahan config DHCP.</p>
+    </div>
+
+    <div class="step">
+      <div class="num">29</div>
+      <h3>Refresh IP di PC Windows</h3>
+      <pre>ipconfig /release
+ipconfig /renew
+ipconfig /all</pre>
+      <div class="insight">
+        <div><b>Fungsi:</b> sama seperti di Bagian 2 (langkah 19) — minta ulang konfigurasi DHCP dari awal, supaya setting DNS baru dari langkah 28 ikut terbawa. <code class="inline">/all</code> menampilkan detail lengkap termasuk baris DNS.</div>
+        <div><b>Output yang dicek:</b> baris <code class="inline">DNS Servers</code> di hasil <code class="inline">ipconfig /all</code> sekarang harus menunjuk ke <code class="inline">192.168.1.1</code>, bukan <code class="inline">8.8.8.8</code> lagi.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">30</div>
+      <h3>Tes resolusi domain dari PC Windows</h3>
+      <pre>nslookup www.skadika.net
+ping www.skadika.net</pre>
+      <div class="insight">
+        <div><b>Fungsi <code class="inline">nslookup</code>:</b> versi Windows dari <code class="inline">dig</code> — tanya ke DNS server yang aktif (harusnya sekarang otomatis ke 192.168.1.1) untuk resolve nama domain.</div>
+        <div><b>Output sukses:</b> <code class="inline">nslookup</code> menampilkan <code class="inline">Server: 192.168.1.1</code> lalu <code class="inline">Name: www.skadika.net, Address: 192.168.1.1</code>. <code class="inline">ping</code> membalas dari <code class="inline">192.168.1.1</code>, bukan "could not find host".</div>
+      </div>
+      <div class="note"><b>Mulai dari sini,</b> web server yang dipasang di Bagian 4 dan seterusnya bisa langsung diakses dari browser PC Windows pakai <code class="inline">http://www.skadika.net</code>, sebagai ganti mengetik IP <code class="inline">192.168.1.1</code> mentah-mentah.</div>
+    </div>
+
+  </div>
+
+  <h2>Checklist Cepat — DNS (BIND9)</h2>
+  <ul class="checklist">
+    <li><code class="inline">dig: command not found</code> → belum ada paket clientnya, install dulu: <code class="inline">sudo apt install dnsutils -y</code> (atau <code class="inline">bind9-dnsutils</code> di Debian 11+)</li>
+    <li><code class="inline">systemctl status bind9</code> harus <code class="inline">active (running)</code>, listening di port 53</li>
+    <li><code class="inline">named-checkconf</code> &amp; <code class="inline">named-checkzone</code> untuk <b>kedua</b> zona (forward <code class="inline">db.skadika.net</code> dan reverse <code class="inline">db.192</code>) — semuanya harus bersih dari error sebelum restart</li>
+    <li>Baris <code class="inline">SOA</code>/<code class="inline">NS</code> di file zona wajib diakhiri titik (<code class="inline">ns.skadika.net.</code>) — lupa titik adalah penyebab error tersering, berlaku di forward maupun reverse zone</li>
+    <li>Nomor <code class="inline">Serial</code> di SOA dinaikkan tiap kali file zona diedit ulang — forward &amp; reverse dihitung terpisah</li>
+    <li><code class="inline">dig -x 192.168.1.1 @localhost</code> gagal/kosong → cek lagi blok zona <code class="inline">1.168.192.in-addr.arpa</code> di <code class="inline">named.conf.local</code> (langkah 24) dan isi <code class="inline">db.192</code> (langkah 25b)</li>
+    <li><code class="inline">ipconfig /all</code> di PC Windows — baris <code class="inline">DNS Servers</code> harus <code class="inline">192.168.1.1</code>, bukan <code class="inline">8.8.8.8</code></li>
+    <li><code class="inline">nslookup www.skadika.net</code> gagal → cek lagi <code class="inline">option domain-name-servers</code> di <code class="inline">dhcpd.conf</code> (langkah 28) sudah diubah &amp; <code class="inline">isc-dhcp-server</code> sudah direstart</li>
+  </ul>
+
+  <div class="note"><b>Titik pijak:</b> mulai bagian ini, Debian yang sama (yang tadi sudah jadi router + DHCP server + DNS server) sekarang <i>juga</i> dipakai sebagai web server. Tidak perlu node baru di GNS3 — semua perintah di bawah tetap dijalankan di console Debian yang sama, dan hasilnya nanti diakses dari browser di PC Windows lewat <code class="inline">http://www.skadika.net</code> atau IP <code class="inline">192.168.1.1</code> (alamat ens5).</div>
+
+  <p class="section-title">Bagian 4 — Pasang Web Server (Apache), Database (MariaDB) &amp; PHP</p>
+  <p class="section-desc">Tiga komponen ini disebut "LAMP stack" (Linux–Apache–MySQL/MariaDB–PHP) — fondasi wajib sebelum WordPress bisa jalan. Apache melayani halaman web, MariaDB menyimpan semua data situs, PHP menjalankan kode WordPress-nya.</p>
+
+  <div class="flow">
+
+    <div class="step">
+      <div class="num">31</div>
+      <h3>Install Apache2</h3>
+      <pre>sudo apt install apache2 -y</pre>
+      <div class="insight">
+        <div><b>Fungsi:</b> menginstall Apache — web server yang bertugas menerima request HTTP dari browser (nanti dari PC Windows) dan mengirim balik halaman web. Flag <code class="inline">-y</code> otomatis jawab "yes" ke semua prompt konfirmasi install.</div>
+        <div><b>Output:</b> proses download &amp; install paket beserta dependensinya, diakhiri baris <code class="inline">Setting up apache2 (2.4.x-...) ...</code>. Service otomatis langsung aktif setelah install selesai (tidak perlu start manual).</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">32</div>
+      <h3>Cek service &amp; tes akses dari PC Windows</h3>
+      <pre>systemctl status apache2 -l</pre>
+      <div class="insight">
+        <div><b>Fungsi:</b> memastikan service Apache benar-benar aktif jalan sebelum lanjut.</div>
+        <div><b>Output sukses:</b> <code class="inline">Active: active (running)</code> disertai log <code class="inline">Server startup</code>. Kalau <code class="inline">Active: failed</code>, cek dulu apakah port 80 sudah dipakai service lain.</div>
+      </div>
+      <p>Buka browser di PC Windows, ketik <code class="inline">http://192.168.1.1</code> (bukan .10 lagi — IP itu sudah dilepas ke mode DHCP di langkah 19).</p>
+      <div class="verdict">
+        <div class="box maybe"><b>Muncul "Apache2 Debian Default Page"</b>Web server sudah jalan dan bisa diakses dari LAN — lanjut ke database.</div>
+        <div class="box bad"><b>Browser gagal connect / timeout</b>Cek lagi PC Windows sudah dapat IP dari DHCP (langkah 19–20), dan Apache sudah <code class="inline">active (running)</code>.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">33</div>
+      <h3>Install MariaDB (database server)</h3>
+      <pre>sudo apt install mariadb-server -y</pre>
+      <div class="insight">
+        <div><b>Fungsi:</b> menginstall MariaDB — fork/pengganti MySQL yang jadi tempat penyimpanan seluruh data WordPress: isi post, halaman, komentar, user, dan setting situs.</div>
+        <div><b>Output:</b> proses install paket, service <code class="inline">mariadb</code> otomatis aktif di akhir instalasi.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">34</div>
+      <h3>Amankan instalasi MariaDB</h3>
+      <pre>sudo mysql_secure_installation</pre>
+      <div class="insight">
+        <div><b>Fungsi:</b> wizard interaktif bawaan MariaDB buat menutup celah keamanan default — set password root, hapus akun anonymous, matikan remote login root, hapus database test.</div>
+        <div><b>Output:</b> serangkaian pertanyaan berurutan, contoh:</div>
+      </div>
+      <pre>Enter current password for root (enter for none): <span class="c">[tekan Enter]</span>
+Switch to unix_socket authentication [Y/n] <span class="g">n</span>
+Set root password? [Y/n] <span class="g">Y</span>
+New password: <span class="c">[isi password root]</span>
+Remove anonymous users? [Y/n] <span class="g">Y</span>
+Disallow root login remotely? [Y/n] <span class="g">Y</span>
+Remove test database and access to it? [Y/n] <span class="g">Y</span>
+Reload privilege tables now? [Y/n] <span class="g">Y</span></pre>
+      <div class="note"><b>Jawab <code class="inline">Y</code> di semua pertanyaan</b> kecuali kalau memang ada alasan khusus (misal butuh remote access root buat keperluan lain).</div>
+    </div>
+
+    <div class="step">
+      <div class="num">35</div>
+      <h3>Buat database &amp; user khusus WordPress</h3>
+      <pre>sudo mysql -u root -p</pre>
+      <div class="insight">
+        <div><b>Fungsi:</b> masuk ke shell MariaDB pakai akun root untuk menjalankan perintah SQL langsung.</div>
+        <div><b>Output:</b> setelah password benar, prompt berubah jadi <code class="inline">MariaDB [(none)]&gt;</code> — dari sini semua baris di bawah diketik di dalam shell ini, diakhiri titik-koma.</div>
+      </div>
+      <pre>CREATE DATABASE <span class="g">wordpress_db</span>;
+CREATE USER '<span class="g">wp_user</span>'@'localhost' IDENTIFIED BY '<span class="g">PasswordKuat123!</span>';
+GRANT ALL PRIVILEGES ON <span class="g">wordpress_db</span>.* TO '<span class="g">wp_user</span>'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;</pre>
+      <div class="insight">
+        <div><b><code class="inline">CREATE DATABASE</code>:</b> bikin database kosong bernama <code class="inline">wordpress_db</code>, tempat semua tabel WordPress nanti dibuat otomatis saat instalasi lewat browser.</div>
+        <div><b><code class="inline">CREATE USER ... IDENTIFIED BY</code>:</b> bikin akun MySQL terpisah (<code class="inline">wp_user</code>) khusus dipakai WordPress — sengaja bukan pakai akun <code class="inline">root</code> langsung, supaya kalau WordPress-nya bocor, yang kebobol cuma database ini, bukan seluruh server database.</div>
+        <div><b><code class="inline">GRANT ALL PRIVILEGES ON wordpress_db.*</code>:</b> ngasih akses penuh (baca/tulis/buat tabel) ke <code class="inline">wp_user</code>, tapi <i>hanya</i> untuk database <code class="inline">wordpress_db</code> — bukan ke database lain di server yang sama.</div>
+        <div><b><code class="inline">FLUSH PRIVILEGES</code>:</b> paksa MariaDB baca ulang tabel hak akses supaya perubahan langsung berlaku.</div>
+        <div><b>Output tiap baris:</b> <code class="inline">Query OK, 1 row affected</code> (atau <code class="inline">0 row affected</code> untuk GRANT/FLUSH) — tandanya perintah sukses dieksekusi. Kalau typo nama tabel/syntax, muncul <code class="inline">ERROR 1064 (42000): You have an error in your SQL syntax</code>.</div>
+      </div>
+      <div class="warn"><b>Ganti <code class="inline">PasswordKuat123!</code></b> dengan password sendiri — dan ingat baik-baik, dipakai lagi persis di langkah 43 (wp-config.php).</div>
+    </div>
+
+    <div class="step">
+      <div class="num">36</div>
+      <h3>Install PHP &amp; modul-modul yang dibutuhkan WordPress</h3>
+      <pre>sudo apt install php php-mysql php-curl php-gd php-mbstring php-xml php-xmlrpc php-soap php-intl php-zip libapache2-mod-php -y</pre>
+      <div class="insight">
+        <div><b>Fungsi <code class="inline">php</code>:</b> interpreter inti — semua file <code class="inline">.php</code> WordPress dijalankan lewat ini.</div>
+        <div><b>Fungsi <code class="inline">php-mysql</code>:</b> modul penghubung PHP ↔ MariaDB, ini yang dipakai WordPress buat baca/tulis ke <code class="inline">wordpress_db</code>.</div>
+        <div><b>Fungsi modul lain</b> (<code class="inline">gd</code> = olah gambar/thumbnail, <code class="inline">mbstring</code> = teks multi-bahasa, <code class="inline">xml</code>/<code class="inline">xmlrpc</code>/<code class="inline">soap</code> = komunikasi data terstruktur &amp; API, <code class="inline">intl</code> = format bahasa/lokal, <code class="inline">zip</code> = extract file saat install plugin/theme dari dalam wp-admin): semuanya dipakai fitur bawaan WordPress, kalau salah satu tidak ada biasanya muncul warning kuning di dashboard.</div>
+        <div><b>Fungsi <code class="inline">libapache2-mod-php</code>:</b> jembatan supaya Apache tahu cara menjalankan file <code class="inline">.php</code> (tanpa ini, Apache cuma akan menawarkan file .php buat di-download, bukan dieksekusi).</div>
+        <div><b>Output:</b> daftar panjang paket yang diinstall, diakhiri proses <code class="inline">Setting up libapache2-mod-php...</code> yang otomatis me-restart/reload Apache.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">37</div>
+      <h3>Restart Apache &amp; tes PHP benar-benar aktif</h3>
+      <pre>sudo systemctl restart apache2</pre>
+      <p>Buat file tes sementara:</p>
+      <pre>sudo nano /var/www/html/info.php</pre>
+      <p>Isi satu baris saja:</p>
+      <pre>&lt;?php phpinfo(); ?&gt;</pre>
+      <div class="insight">
+        <div><b>Fungsi:</b> <code class="inline">phpinfo()</code> adalah fungsi bawaan PHP yang mencetak semua detail konfigurasi PHP yang aktif — cara paling cepat mengecek apakah Apache sudah benar-benar menjalankan (bukan cuma menampilkan mentah-mentah) file PHP.</div>
+      </div>
+      <p>Buka <code class="inline">http://192.168.1.1/info.php</code> dari browser PC Windows.</p>
+      <div class="verdict">
+        <div class="box maybe"><b>Muncul tabel biru info versi PHP</b>PHP + Apache sudah nyambung dengan benar.</div>
+        <div class="box bad"><b>Browser malah nawarin download file .php</b>Modul <code class="inline">libapache2-mod-php</code> belum aktif — cek lagi langkah 36, lalu <code class="inline">sudo systemctl restart apache2</code>.</div>
+      </div>
+      <div class="warn"><b>Wajib dihapus setelah tes</b> — halaman <code class="inline">phpinfo()</code> membocorkan detail server ke siapa pun yang tahu URL-nya:</div>
+      <pre>sudo rm /var/www/html/info.php</pre>
+    </div>
+
+  </div>
+
+  <p class="section-title">Bagian 5 — Download &amp; Pasang File WordPress</p>
+  <p class="section-desc">Mengambil paket WordPress resmi dan menaruhnya di folder yang dilayani Apache (<code class="inline">/var/www/html</code>), lengkap dengan hak akses yang benar.</p>
+
+  <div class="flow">
+
+    <div class="step">
+      <div class="num">38</div>
+      <h3>Download WordPress terbaru</h3>
+      <pre>cd /tmp
+wget https://wordpress.org/latest.tar.gz</pre>
+      <div class="insight">
+        <div><b>Fungsi <code class="inline">cd /tmp</code>:</b> pindah ke folder sementara dulu, supaya file unduhan &amp; hasil ekstraknya tidak mengotori folder lain.</div>
+        <div><b>Fungsi <code class="inline">wget</code>:</b> mengunduh file lewat HTTP/HTTPS langsung dari command line — di sini ambil arsip WordPress versi terbaru dari situs resminya.</div>
+        <div><b>Output:</b> progress bar unduhan, diakhiri baris <code class="inline">'latest.tar.gz' saved [ukuran_file]</code>.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">39</div>
+      <h3>Ekstrak arsip</h3>
+      <pre>tar xzvf latest.tar.gz</pre>
+      <div class="insight">
+        <div><b>Fungsi:</b> <code class="inline">x</code> = extract, <code class="inline">z</code> = arsip terkompresi gzip, <code class="inline">v</code> = verbose (tampilkan tiap file), <code class="inline">f</code> = nama file arsip yang dibaca.</div>
+        <div><b>Output:</b> daftar panjang nama file yang diekstrak, semuanya masuk ke satu folder baru bernama <code class="inline">wordpress/</code>.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">40</div>
+      <h3>Pindahkan ke document root Apache</h3>
+      <pre>sudo rm -f /var/www/html/index.html
+sudo cp -r /tmp/wordpress/* /var/www/html/</pre>
+      <div class="insight">
+        <div><b>Fungsi baris 1:</b> menghapus halaman default Apache (<code class="inline">index.html</code>) — kalau dibiarkan, browser masih akan menampilkan halaman "Apache2 Default Page" itu duluan ketimbang WordPress.</div>
+        <div><b>Fungsi baris 2:</b> menyalin seluruh isi folder <code class="inline">wordpress/</code> (bukan foldernya sendiri, makanya pakai <code class="inline">*</code>) ke <code class="inline">/var/www/html</code> — folder inilah yang benar-benar dibaca Apache saat ada request ke <code class="inline">http://192.168.1.1</code>.</div>
+        <div><b>Output:</b> tidak ada output kalau sukses (perintah <code class="inline">cp</code> memang diam kalau berhasil). Cek hasilnya dengan <code class="inline">ls /var/www/html</code> — harus muncul file seperti <code class="inline">wp-config-sample.php</code>, <code class="inline">wp-login.php</code>, folder <code class="inline">wp-content</code>, dll.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">41</div>
+      <h3>Set kepemilikan &amp; permission folder</h3>
+      <pre>sudo chown -R www-data:www-data /var/www/html
+sudo find /var/www/html -type d -exec chmod 755 {} \;
+sudo find /var/www/html -type f -exec chmod 644 {} \;</pre>
+      <div class="insight">
+        <div><b>Fungsi <code class="inline">chown -R www-data:www-data</code>:</b> <code class="inline">www-data</code> adalah user sistem yang dipakai Apache buat jalan. Dengan menjadikan dia pemilik seluruh folder, WordPress jadi bisa menulis file sendiri (upload gambar, install plugin/theme, update otomatis) tanpa error "permission denied".</div>
+        <div><b>Fungsi <code class="inline">find ... chmod 755</code> (folder):</b> pemilik boleh baca/tulis/masuk folder, orang lain cuma boleh baca &amp; masuk — standar aman untuk folder web.</div>
+        <div><b>Fungsi <code class="inline">find ... chmod 644</code> (file):</b> pemilik boleh baca/tulis, orang lain cuma baca — file tidak boleh dieksekusi langsung sebagai program oleh sembarang orang.</div>
+        <div><b>Output:</b> tidak ada output kalau sukses. Kalau nanti WordPress masih minta kredensial FTP saat mau update/install plugin, biasanya tandanya langkah ini belum tepat.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <p class="section-title">Bagian 6 — Konfigurasi <code class="inline">wp-config.php</code> &amp; Permalink</p>
+  <p class="section-desc">Menyambungkan file WordPress ke database yang sudah dibuat di langkah 35, plus mengaktifkan permalink (URL) yang rapi.</p>
+
+  <div class="flow">
+
+    <div class="step">
+      <div class="num">42</div>
+      <h3>Duplikat file konfigurasi contoh</h3>
+      <pre>cd /var/www/html
+sudo cp wp-config-sample.php wp-config.php</pre>
+      <div class="insight">
+        <div><b>Fungsi:</b> WordPress tidak pernah membaca <code class="inline">wp-config-sample.php</code> langsung — file itu cuma template. Harus disalin dulu jadi <code class="inline">wp-config.php</code>, baru diisi kredensial database yang sebenarnya.</div>
+        <div><b>Output:</b> tidak ada output kalau sukses; cek dengan <code class="inline">ls wp-config.php</code>.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">43</div>
+      <h3>Isi kredensial database</h3>
+      <pre>sudo nano wp-config.php</pre>
+      <p>Cari tiga baris <code class="inline">define()</code> di bagian atas file, ganti sesuai yang dibuat di langkah 35:</p>
+      <div class="diffbox">
+        <div>
+          <h4>Sebelum (template)</h4>
+          <pre>define( 'DB_NAME', <span class="c">'database_name_here'</span> );
+define( 'DB_USER', <span class="c">'username_here'</span> );
+define( 'DB_PASSWORD', <span class="c">'password_here'</span> );
+define( 'DB_HOST', <span class="c">'localhost'</span> );</pre>
+        </div>
+        <div>
+          <h4>Sesudah (diisi)</h4>
+          <pre>define( 'DB_NAME', <span class="g">'wordpress_db'</span> );
+define( 'DB_USER', <span class="g">'wp_user'</span> );
+define( 'DB_PASSWORD', <span class="g">'PasswordKuat123!'</span> );
+define( 'DB_HOST', <span class="g">'localhost'</span> );</pre>
+        </div>
+      </div>
+      <div class="insight">
+        <div><b>Fungsi:</b> keempat konstanta ini memberi tahu WordPress database mana yang harus dipakai, dengan akun apa, dan di server mana (<code class="inline">localhost</code> karena MariaDB jalan di mesin Debian yang sama).</div>
+        <div><b>Output:</b> tidak ada output CLI — hasilnya baru kelihatan saat wizard instalasi di Bagian 7 berhasil konek ke database (kalau salah, wizard akan menampilkan pesan <code class="inline">Error establishing a database connection</code>).</div>
+      </div>
+      <div class="warn"><b>Kalau nanti muncul "Error establishing a database connection"</b> saat buka browser di Bagian 7 — balik cek tiga hal: nama database/user/password di file ini harus persis sama dengan yang dibuat di langkah 35 (termasuk huruf besar-kecil), dan pastikan <code class="inline">mariadb</code> statusnya <code class="inline">active</code> (<code class="inline">systemctl status mariadb</code>).</div>
+    </div>
+
+    <div class="step">
+      <div class="num">44</div>
+      <h3>Aktifkan mod_rewrite (buat permalink URL yang rapi)</h3>
+      <pre>sudo a2enmod rewrite
+sudo nano /etc/apache2/sites-available/000-default.conf</pre>
+      <div class="insight">
+        <div><b>Fungsi <code class="inline">a2enmod rewrite</code>:</b> mengaktifkan modul Apache yang dibutuhkan WordPress buat mengubah URL panjang (<code class="inline">?p=123</code>) jadi URL rapi (<code class="inline">/nama-post/</code>) lewat file <code class="inline">.htaccess</code>.</div>
+        <div><b>Output:</b> <code class="inline">Enabling module rewrite. To activate the new configuration, you need to run: systemctl restart apache2</code>.</div>
+      </div>
+      <p>Tambahkan blok berikut di dalam <code class="inline">&lt;VirtualHost *:80&gt;</code>, sebelum <code class="inline">&lt;/VirtualHost&gt;</code>:</p>
+      <pre>&lt;Directory /var/www/html&gt;
+    AllowOverride All
+&lt;/Directory&gt;</pre>
+      <div class="insight">
+        <div><b>Fungsi:</b> tanpa <code class="inline">AllowOverride All</code>, Apache akan mengabaikan file <code class="inline">.htaccess</code> yang nanti dibuat otomatis oleh WordPress — permalink custom jadi tidak berfungsi (semua link balik ke bentuk <code class="inline">?p=123</code>).</div>
+      </div>
+      <pre>sudo systemctl restart apache2</pre>
+      <p>Terapkan kedua perubahan sekaligus.</p>
+    </div>
+
+  </div>
+
+  <p class="section-title">Bagian 7 — Instalasi WordPress lewat Browser ("5-Minute Install")</p>
+  <p class="section-desc">Bagian ini dikerjakan sepenuhnya dari browser PC Windows, bukan console Debian — WordPress punya wizard setup sendiri begitu <code class="inline">wp-config.php</code> siap.</p>
+
+  <div class="flow">
+
+    <div class="step">
+      <div class="num">45</div>
+      <h3>Buka wizard instalasi &amp; pilih bahasa</h3>
+      <p>Di PC Windows, buka browser lalu akses <code class="inline">http://192.168.1.1</code>.</p>
+      <div class="insight">
+        <div><b>Output:</b> WordPress otomatis mendeteksi belum ada instalasi &amp; database masih kosong, lalu menampilkan halaman pilih bahasa (<i>Language Selection</i>). Pilih <code class="inline">Bahasa Indonesia</code> atau <code class="inline">English</code>, klik <code class="inline">Continue</code>.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">46</div>
+      <h3>Isi form "Informasi Situs"</h3>
+      <p>Wizard menampilkan form dengan field:</p>
+      <ul class="checklist">
+        <li><b>Site Title</b> — nama situs, contoh: "Lab WordPress SMK"</li>
+        <li><b>Username</b> — akun admin utama (jangan pakai "admin" polos supaya lebih aman)</li>
+        <li><b>Password</b> — WordPress otomatis generate password kuat, bisa dipakai atau diganti sendiri</li>
+        <li><b>Your Email</b> — email pemulihan akun (boleh alamat mana saja untuk keperluan lab)</li>
+        <li><b>Search Engine Visibility</b> — centang "Discourage search engines" untuk lab lokal (tidak relevan karena tidak terhubung internet publik)</li>
+      </ul>
+      <p>Klik <code class="inline">Install WordPress</code>.</p>
+      <div class="insight">
+        <div><b>Terjadi di belakang layar:</b> WordPress memakai kredensial dari <code class="inline">wp-config.php</code> (langkah 43) untuk konek ke <code class="inline">wordpress_db</code>, lalu otomatis membuat seluruh tabel yang dibutuhkan (isi post, user, setting, dll).</div>
+        <div><b>Output sukses:</b> halaman "Success!" dengan tombol <code class="inline">Log In</code>.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">47</div>
+      <h3>Login ke wp-admin</h3>
+      <pre>http://192.168.1.1/wp-admin</pre>
+      <div class="insight">
+        <div><b>Fungsi:</b> URL ini adalah pintu masuk dashboard admin WordPress — dari sini semua pengaturan &amp; konten situs dikelola.</div>
+        <div><b>Output:</b> form login, masukkan <code class="inline">Username</code> &amp; <code class="inline">Password</code> dari langkah 46 → masuk ke Dashboard WordPress.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <p class="section-title">Bagian 8 — Input Konten Pertama di WordPress</p>
+  <p class="section-desc">WordPress sudah terpasang tapi masih kosong — bagian ini mengisi konten dasar: satu post, satu halaman, dan menu navigasi, supaya situsnya benar-benar "hidup" saat dibuka di frontend.</p>
+
+  <div class="flow">
+
+    <div class="step">
+      <div class="num">48</div>
+      <h3>Buat Post pertama</h3>
+      <p>Di Dashboard, buka <code class="inline">Posts → Add New</code> (atau <code class="inline">Pos → Tambah Baru</code>).</p>
+      <div class="insight">
+        <div><b>Fungsi:</b> Post dipakai untuk konten yang berurutan dari waktu ke waktu (blog, pengumuman) — tampil otomatis di halaman utama, urut dari yang terbaru.</div>
+      </div>
+      <p>Isi judul (contoh: "Selamat Datang di Lab WordPress") dan isi konten di editor blok. Klik <code class="inline">Publish</code> (lalu konfirmasi <code class="inline">Publish</code> sekali lagi).</p>
+      <div class="insight">
+        <div><b>Output:</b> notifikasi hijau <code class="inline">Post published.</code> dengan tombol <code class="inline">View Post</code> — klik untuk lihat hasilnya langsung di frontend.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">49</div>
+      <h3>Buat Page (halaman statis)</h3>
+      <p>Buka <code class="inline">Pages → Add New</code>. Isi judul, contoh: "Tentang Kami", isi konten singkat, lalu <code class="inline">Publish</code>.</p>
+      <div class="insight">
+        <div><b>Fungsi Page vs Post:</b> Page dipakai untuk konten yang sifatnya tetap/tidak berurutan waktu (Tentang Kami, Kontak, Layanan) — tidak otomatis muncul di daftar terbaru seperti Post, biasanya diakses lewat menu navigasi.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">50</div>
+      <h3>Atur menu navigasi</h3>
+      <p>Buka <code class="inline">Appearance → Menus</code> (<code class="inline">Tampilan → Menu</code>). Beri nama menu (misal "Menu Utama"), centang halaman "Tentang Kami" di panel kiri, klik <code class="inline">Add to Menu</code>, lalu centang <code class="inline">Primary</code>/<code class="inline">Header</code> di bagian <i>Menu Locations</i>. Klik <code class="inline">Save Menu</code>.</p>
+      <div class="insight">
+        <div><b>Fungsi:</b> tanpa langkah ini, halaman "Tentang Kami" sudah ada tapi pengunjung tidak punya cara mengaksesnya dari tampilan depan — harus lewat menu supaya bisa diklik.</div>
+        <div><b>Output:</b> notifikasi <code class="inline">Menu structure updated.</code>, dan link navigasi baru muncul di header situs.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="num">51</div>
+      <h3>Cek hasil akhir di frontend</h3>
+      <pre>http://192.168.1.1</pre>
+      <div class="insight">
+        <div><b>Output:</b> halaman depan situs sudah menampilkan Post yang dibuat di langkah 48, menu navigasi dari langkah 50 di bagian atas, dan klik menu "Tentang Kami" membuka Page dari langkah 49. Ini penanda seluruh alur — dari topologi GNS3 kosong sampai situs WordPress berisi konten — sudah selesai dan bisa diakses penuh dari PC Windows.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <h2>Checklist Cepat — Web Server &amp; WordPress</h2>
+  <ul class="checklist">
+    <li><code class="inline">systemctl status apache2</code> dan <code class="inline">systemctl status mariadb</code> — dua-duanya harus <code class="inline">active (running)</code></li>
+    <li>Nama database/user/password di <code class="inline">wp-config.php</code> harus persis sama dengan yang dibuat lewat <code class="inline">CREATE DATABASE</code>/<code class="inline">CREATE USER</code></li>
+    <li>Permission folder: <code class="inline">/var/www/html</code> milik <code class="inline">www-data:www-data</code>, folder 755, file 644</li>
+    <li>File <code class="inline">info.php</code> (tes phpinfo) sudah dihapus setelah verifikasi — jangan ditinggal di server</li>
+    <li>"Error establishing a database connection" saat install → cek ulang kredensial di <code class="inline">wp-config.php</code> dan status <code class="inline">mariadb</code></li>
+    <li>Permalink custom tidak jalan (masih bentuk <code class="inline">?p=123</code>) → cek <code class="inline">a2enmod rewrite</code> sudah aktif &amp; <code class="inline">AllowOverride All</code> sudah diset</li>
+  </ul>
+
+  <p class="section-title" id="troubleshooting">Bagian 9 — Troubleshooting: Error apt update</p>
+<p class="section-desc">Dipakai kalau kena error di langkah 14 (Bagian 1) — error <code class="inline">apt update</code> yang keliatannya soal DNS padahal biasanya soal routing/DHCP.</p>
+
+  <h2>Gejala</h2>
+  <p>Saat menjalankan <code class="inline">apt update</code>, muncul:</p>
+  <pre>Temporary failure resolving 'deb.debian.org'</pre>
+  <p>Dan saat <code class="inline">ping 8.8.8.8</code>:</p>
+  <pre>ping: connect: Network is unreachable</pre>
+
+  <div class="callout">
+    <b>Jangan tertipu:</b> kata "resolving" di pesan error itu kelihatan kayak masalah DNS, padahal biasanya <b>bukan</b>. Ikuti langkah di bawah untuk cek akar masalah sebenarnya.
+  </div>
+
+  <h2>Jalur Cepat (Coba Ini Dulu)</h2>
+  <p>Sebelum masuk ke diagnosa detail di bawah, sering kali cukup dengan loop singkat ini — terutama kalau penyebabnya cuma typo pas edit <code class="inline">/etc/network/interfaces</code>:</p>
+  <div class="step-title">1. Cek ulang status interface</div>
+  <pre>ip a</pre>
+  <div class="insight">
+    <div><b>Fungsi:</b> lihat lagi apakah <code class="inline">ens4</code> (dan <code class="inline">ens5</code>) sudah punya IPv4 yang benar setelah edit terakhir.</div>
+    <div><b>Output:</b> kalau <code class="inline">ens4</code> masih cuma <code class="inline">inet6 fe80::...</code> tanpa baris <code class="inline">inet</code>, berarti config belum kepasang dengan benar — lanjut ke langkah 2.</div>
+  </div>
+  <div class="step-title">2. Kalau masih salah, perbaiki lagi confignya</div>
+  <pre>nano /etc/network/interfaces</pre>
+  <div class="insight">
+    <div><b>Fungsi:</b> buka lagi file yang sama, cek baris <code class="inline">auto</code>/<code class="inline">iface</code> — typo yang paling sering: lupa hapus tanda <code class="inline">#</code>, salah nama interface (ens4 vs ens5 tertukar), atau baris <code class="inline">address</code>/<code class="inline">netmask</code> ke-indent tidak konsisten.</div>
+  </div>
+  <div class="step-title">3. Restart networking</div>
+  <pre>systemctl restart networking</pre>
+  <div class="insight">
+    <div><b>Fungsi:</b> terapkan ulang perbaikan tadi.</div>
+    <div><b>Output:</b> kalau tidak ada error yang tampil, config sudah kebaca dengan benar. Cek lagi dengan <code class="inline">systemctl status networking -l</code> kalau mau lebih yakin.</div>
+  </div>
+  <div class="step-title">4. Coba apt update lagi</div>
+  <pre>apt update</pre>
+  <div class="insight">
+    <div><b>Fungsi:</b> tes ulang — kalau loop 1–3 sudah membetulkan interface, ini biasanya langsung berhasil tanpa perlu <code class="inline">ifdown</code>/<code class="inline">ifup</code> atau diagnosa lebih dalam.</div>
+  </div>
+  <div class="note"><b>Kalau setelah loop ini masih gagal</b> (interface sudah benar tapi tetap "Network is unreachable" atau "No DHCPOFFERS received"), baru lanjut ke diagnosa detail di bawah — kemungkinan masalahnya di sisi NAT/Cloud node atau routing, bukan lagi di file interfaces.</div>
+
+  <h2>Langkah Perbaikan (Detail)</h2>
+
+  <div class="step-title">1. Tes koneksi internet dasar</div>
+  <pre>ping 8.8.8.8</pre>
+  <div class="insight">
+    <div><b>Fungsi:</b> mengirim paket ICMP ke IP publik untuk tes apakah ada jalur keluar sama sekali — tanpa melibatkan DNS (langsung ke IP, bukan nama domain).</div>
+    <div><b>Output:</b> kalau lancar, muncul balasan <code class="inline">64 bytes from 8.8.8.8: icmp_seq=1 ttl=... time=...ms</code> berulang. Kalau bermasalah, muncul <code class="inline">Network is unreachable</code> (routing) atau <code class="inline">Request timeout</code> (kemungkinan diblok firewall/DNS).</div>
+  </div>
+  <div class="verdict">
+    <div class="box bad"><b>"Network is unreachable"</b>Masalah di koneksi/routing — bukan DNS.</div>
+    <div class="box maybe"><b>"timeout" saja</b>Baru kemungkinan masalah DNS/firewall.</div>
+  </div>
+
+  <div class="step-title">2. Cek semua interface jaringan</div>
+  <pre>ip addr show</pre>
+  <div class="insight">
+    <div><b>Fungsi:</b> sama seperti <code class="inline">ip a</code> — menampilkan semua interface beserta IP address yang sedang aktif, buat cek satu-satu mana yang bermasalah.</div>
+    <div><b>Output:</b> interface sehat menampilkan baris <code class="inline">inet 10.0.3.15/24</code>. Kalau cuma ada <code class="inline">inet6 fe80::...</code> tanpa baris <code class="inline">inet</code>, itu tandanya belum dapat IPv4 dari DHCP.</div>
+  </div>
+  <p>Lihat interface ke arah internet (misalnya <code class="inline">ens4</code>). Kalau statusnya <code class="inline">UP</code> tapi cuma punya IPv6 (<code class="inline">fe80::...</code>) tanpa IPv4 → interface itu belum dapat IP dari DHCP.</p>
+
+  <div class="step-title">3. Restart interface yang bermasalah</div>
+  <pre>ifdown ens4 <span class="a">&&</span> ifup ens4</pre>
+  <div class="insight">
+    <div><b>Fungsi:</b> <code class="inline">ifdown</code> mematikan interface, <code class="inline">ifup</code> menyalakan lagi sesuai konfigurasi di <code class="inline">/etc/network/interfaces</code> — dipakai berurutan (<code class="inline">&&</code>) supaya interface benar-benar minta ulang IP dari awal ke DHCP server.</div>
+    <div><b>Output:</b> biasanya tanpa output kalau sukses. Kalau ada masalah, muncul pesan error dari ifupdown (misalnya interface tidak dikenal, atau config syntax salah).</div>
+  </div>
+  <p>Ganti <code class="inline">ens4</code> dengan nama interface kalian sendiri. Ini memaksa interface minta ulang IP ke DHCP server (biasanya NAT node di GNS3).</p>
+
+  <div class="step-title">4. Pastikan proses DHCP berhasil</div>
+  <p>Setelah restart, harus muncul log seperti:</p>
+  <pre><span class="g">DHCPDISCOVER</span> on ens4 to 255.255.255.255 port 67
+<span class="g">DHCPOFFER</span> of 192.168.140.63 from 192.168.140.1
+<span class="g">DHCPACK</span> of 192.168.140.63 from 192.168.140.1
+bound to 192.168.140.63 -- renewal in 301 seconds.</pre>
+  <p>Kalau log ini muncul → interface sudah dapat IP dengan benar.</p>
+
+  <div class="step-title">5. Verifikasi ulang</div>
+  <pre>ip route show
+ping -c 3 8.8.8.8
+ping -c 3 deb.debian.org</pre>
+  <div class="insight">
+    <div><b>Fungsi <code class="inline">ip route show</code>:</b> menampilkan tabel routing — cek apakah ada baris <code class="inline">default via ...</code> (gateway) yang dipakai untuk trafik keluar.</div>
+    <div><b>Fungsi <code class="inline">ping -c 3</code>:</b> sama seperti ping biasa, tapi dibatasi 3 paket saja lalu berhenti otomatis (praktis buat tes cepat berulang).</div>
+    <div><b>Output:</b> <code class="inline">ip route show</code> sehat menampilkan baris <code class="inline">default via 192.168.x.x dev ens4</code>. <code class="inline">ping deb.debian.org</code> yang sukses berarti DNS <i>dan</i> routing sama-sama sudah beres.</div>
+  </div>
+  <p>Semua harus berhasil (dapat reply, bukan unreachable).</p>
+
+  <div class="step-title">6. Jalankan apt update lagi</div>
+  <pre>apt update</pre>
+  <div class="insight">
+    <div><b>Fungsi:</b> refresh index paket dari repository Debian — tidak menginstall apa pun.</div>
+    <div><b>Output sukses:</b> deretan baris <code class="inline">Get:1 http://deb.debian.org/debian ...</code> diakhiri <code class="inline">Reading package lists... Done</code>, tanpa baris "Temporary failure resolving".</div>
+  </div>
+  <p>Kalau semua tes di atas sudah oke, ini seharusnya jalan normal.</p>
+  <div class="callout">Kalau muncul warning <code class="inline">IPv6 duplicate address</code>, abaikan saja — itu cuma soal IPv6, tidak memengaruhi internet IPv4.</div>
+
+  <div class="step-title">7. Kalau semua di atas sudah dicoba tapi masih error juga</div>
+  <p>Coba ganti tipe node di topologi GNS3: yang tadinya pakai <code class="inline">Cloud</code>, ganti ke <code class="inline">NAT</code> — atau sebaliknya kalau tadinya sudah <code class="inline">NAT</code>, coba ganti ke <code class="inline">Cloud</code>.</p>
+  <div class="insight">
+    <div><b>Kenapa ini kadang membantu:</b> <code class="inline">Cloud</code> di GNS3 nge-bridge langsung ke interface fisik/virtual host kamu (butuh permission &amp; interface host yang cocok), sedangkan <code class="inline">NAT</code> pakai NAT engine bawaan GNS3/libvirt yang punya DHCP sendiri. Kadang salah satu gagal connect ke internet gara-gara environment host (driver interface, permission, atau interface yang dipilih di Cloud salah), sementara yang satunya jalan normal — dua-duanya sebenarnya beda mekanisme walau tujuannya sama (kasih akses internet ke topologi).</div>
+    <div><b>Cara ganti:</b> hapus node Cloud/NAT lama dari kanvas GNS3 (kabel ikut kehapus), tarik node pengganti dari panel kiri, sambungkan ulang ke Debian (ens4), lalu ulangi dari langkah <code class="inline">ifdown/ifup</code> atau restart networking.</div>
+  </div>
+  <p style="color:var(--text-dim); font-size:14px;">Kalau setelah ganti ini masih error juga — ya sudah, sabar dulu 😄 kemungkinan ada yang lebih dalam di sisi environment/host, cek versi GNS3 &amp; driver jaringan host.</p>
+
+  <h2>Checklist Cepat untuk Kasus Serupa</h2>
+  <ul class="checklist">
+    <li>Errornya beneran DNS, atau jangan-jangan "Network is unreachable" (routing)?</li>
+    <li><code class="inline">ip addr show</code> — interface ke arah internet punya IPv4 (bukan cuma IPv6 link-local)?</li>
+    <li><code class="inline">ip route show</code> — ada baris <code class="inline">default via ...</code>?</li>
+    <li>Interface pakai DHCP tapi gak dapat IP → coba <code class="inline">ifdown &lt;iface&gt; && ifup &lt;iface&gt;</code></li>
+    <li>Kalau "No DHCPOFFERS received" → cek koneksi ke NAT node/Cloud node di topologi GNS3</li>
+    <li>Sudah semua dicoba tapi masih error → ganti tipe node <code class="inline">Cloud</code> ↔ <code class="inline">NAT</code> di topologi, lalu ulangi</li>
+  </ul>
+
+  <h2>Referensi Config yang Dipakai — dengan Koreksi Syntax</h2>
+  <div class="fixnote">
+    <b>Perlu diperbaiki:</b> di config asli, baris <code class="inline">ens5</code> menulis <code class="inline">address 192.168.1.1/24</code> <i>sekaligus</i> baris <code class="inline">netmask 255.255.255.0</code> terpisah. Dua-duanya sama-sama menyatakan prefix — pakai salah satu saja, jangan digabung, supaya ifupdown tidak parse ganda.
+  </div>
+  <div class="diffbox">
+    <div>
+      <h4>Config asli (redundan)</h4>
+      <pre>auto lo
+iface lo inet loopback
+
+auto ens4
+iface ens4 inet dhcp
+
+auto ens5
+iface ens5 inet static
+<span class="a">        address 192.168.1.1/24
+        netmask 255.255.255.0</span></pre>
+    </div>
+    <div>
+      <h4>Sesudah dirapikan (pilih satu gaya)</h4>
+      <pre>auto lo
+iface lo inet loopback
+
+auto ens4
+iface ens4 inet dhcp
+
+auto ens5
+iface ens5 inet static
+<span class="g">    address 192.168.1.1
+    netmask 255.255.255.0</span></pre>
+    </div>
+  </div>
+  <p>Atau kalau mau gaya CIDR ringkas, cukup satu baris <code class="inline">address 192.168.1.1/24</code> tanpa baris netmask terpisah — jangan dua-duanya sekaligus.</p>
+
+  
+
+  <footer>
+    Dokumen ini dibuat untuk dibagikan sebagai referensi — cek ulang tiap langkah dan sesuaikan IP/interface dengan environment masing-masing.
+  </footer>
+
+</div>
+</body>
+</html>
